@@ -83,7 +83,7 @@ impl Universe {
     }
 
     pub fn new() -> Universe {
-        let width = 64;
+        let width = 64 * 3 - 8;
         let height = 64;
 
         let cells = (0..width * height)
