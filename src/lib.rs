@@ -15,5 +15,5 @@ extern {
 
 #[wasm_bindgen]
 pub fn greet() {
-    alert("Hello, game-of-life-rs!");
+    alert("Hello, from rust to vue");
 }
