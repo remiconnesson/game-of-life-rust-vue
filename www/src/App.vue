@@ -1,32 +1,68 @@
 <script setup lang="ts">
-import { Universe } from "game-of-life-rs";
-import { ref } from 'vue'
+import { Universe, Cell } from "game-of-life-rs";
+import { ref, onMounted } from "vue";
 
-const universe = Universe.new()
-const gameOfLife = ref('loading life...')
+const CELL_SIZE = 5; // px
+const GRID_COLOR = "#CCCCCC";
+const DEAD_COLOR = "#FFFFFF";
+const ALIVE_COLOR = "#000000";
 
-gameOfLife.value = universe.render()
+const universe = Universe.new();
+const width = universe.width();
+const height = universe.height();
 
-function tick () {
-  universe.tick()
-  gameOfLife.value = universe.render()
+const canvas = ref<HTMLCanvasElement | null>(null);
+
+function drawGrid(ctx: CanvasRenderingContext2D) {
+  ctx.beginPath();
+  ctx.strokeStyle = GRID_COLOR;
+
+  for (let i = 0; i <= width; i++) {
+    ctx.moveTo(i * (CELL_SIZE + 1) + 1, 0);
+    ctx.lineTo(i * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * height + 1);
+  }
+
+  for (let j = 0; j <= height; j++) {
+    ctx.moveTo(0, j * (CELL_SIZE + 1) + 1);
+    ctx.lineTo((CELL_SIZE + 1) * width + 1, j * (CELL_SIZE + 1) + 1);
+  }
+
+  ctx.stroke();
 }
 
-setInterval(tick, 750)
+onMounted(() => {
+  if (canvas.value === null) throw new Error("canvas not found.");
+
+  canvas.value.height = (CELL_SIZE + 1) * height + 1;
+  canvas.value.width = (CELL_SIZE + 1) * width + 1;
+
+  const CONTEXT: "2d" = "2d";
+  const ctx = canvas.value.getContext(CONTEXT);
+  if (ctx === null) throw new Error(`failed to get canvas context: ${CONTEXT}`);
+
+  // tmp
+  drawGrid(ctx);
+});
+
+function tick(ctx: CanvasRenderingContext2D) {
+  universe.tick();
+  // drawGrid
+  // drawCell
+}
 </script>
 
 <template>
   <div id="game-of-life">
-    <pre>{{ gameOfLife }}</pre>
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 
 <style scoped>
- #game-of-life{
+#game-of-life {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%; 
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: row;
@@ -39,4 +75,3 @@ pre {
   font-size: 8px;
 }
 </style>
-
