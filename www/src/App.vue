@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Universe, Cell } from "game-of-life-rs";
-import { ref, onMounted } from "vue";
+import { memory } from "game-of-life-rs/game_of_life_rs_bg.wasm";
+import { ref, onMounted, onUnmounted } from "vue";
 
 const CELL_SIZE = 5; // px
 const GRID_COLOR = "#CCCCCC";
@@ -12,6 +13,36 @@ const width = universe.width();
 const height = universe.height();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
+
+const getIndex = (row: number, col: number) => row * width + col;
+
+type Effect = {
+  (): void;
+};
+const unmountedEffects: Effect[] = [];
+
+function drawCells(ctx: CanvasRenderingContext2D) {
+  const cellsPtr = universe.cells();
+  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+
+  ctx.beginPath();
+
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const idx = getIndex(row, col);
+
+      ctx.fillStyle = cells[idx] === Cell.Dead ? DEAD_COLOR : ALIVE_COLOR;
+
+      ctx.fillRect(
+        col * (CELL_SIZE + 1) + 1,
+        row * (CELL_SIZE + 1) + 1,
+        CELL_SIZE,
+        CELL_SIZE
+      );
+    }
+  }
+  ctx.stroke();
+}
 
 function drawGrid(ctx: CanvasRenderingContext2D) {
   ctx.beginPath();
@@ -30,6 +61,12 @@ function drawGrid(ctx: CanvasRenderingContext2D) {
   ctx.stroke();
 }
 
+function tick(ctx: CanvasRenderingContext2D) {
+  universe.tick();
+  drawGrid(ctx);
+  drawCells(ctx);
+}
+
 onMounted(() => {
   if (canvas.value === null) throw new Error("canvas not found.");
 
@@ -40,15 +77,16 @@ onMounted(() => {
   const ctx = canvas.value.getContext(CONTEXT);
   if (ctx === null) throw new Error(`failed to get canvas context: ${CONTEXT}`);
 
-  // tmp
   drawGrid(ctx);
+  drawCells(ctx);
+
+  const interval = setInterval(tick, 750, ctx);
+  unmountedEffects.push(() => clearInterval(interval));
 });
 
-function tick(ctx: CanvasRenderingContext2D) {
-  universe.tick();
-  // drawGrid
-  // drawCell
-}
+onUnmounted(() => {
+  unmountedEffects.forEach((fx) => fx());
+});
 </script>
 
 <template>
